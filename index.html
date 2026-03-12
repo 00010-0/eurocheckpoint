@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EUROCHECKPOINT</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:      #F7F5F0;
+    --border:  #E0DBD4;
+    --text:    #111111;
+    --muted:   #AAAAAA;
+    --accent:  #B88EF0;
+    --yellow:  #F5C800;
+    --bar-off: #DDDAD4;
+    --bar-on:  #B88EF0;
+    --btn-bg:  #F5C800;
+    --btn-fg:  #111111;
+    --hint-b:  #E5E0D8;
+    --hint-t:  #AAAAAA;
+    --hint-s:  #B88EF0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #0C0C0C;
+      --border:  #1E1E1E;
+      --text:    #F5F5F0;
+      --muted:   #555555;
+      --accent:  #A87AE0;
+      --yellow:  #F5C800;
+      --bar-off: #222222;
+      --bar-on:  #A87AE0;
+      --btn-bg:  #F5C800;
+      --btn-fg:  #0C0C0C;
+      --hint-b:  #161616;
+      --hint-t:  #3a3a3a;
+      --hint-s:  #A87AE0;
+    }
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow: hidden;
+    transition: background .3s, color .3s;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.035;
+  }
+
+  .page {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 30px 36px;
+    position: relative;
+  }
+
+  /* top accent bar */
+  .page::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg,
+      var(--yellow) 0%, var(--yellow) 18%,
+      var(--accent) 18%, var(--accent) 32%,
+      transparent 32%
+    );
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 6px;
+    line-height: 1;
+  }
+
+  .logo em { color: var(--accent); font-style: normal; }
+
+  .status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.57rem; color: var(--muted);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-top: 5px;
+  }
+
+  .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--yellow);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+  /* CENTER */
+  .center {
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+  }
+
+  .beat-card { width: 100%; max-width: 540px; }
+
+  .beat-header {
+    display: flex; justify-content: space-between;
+    align-items: baseline; margin-bottom: 4px;
+  }
+
+  .beat-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.8rem, 5.5vw, 3.4rem);
+    letter-spacing: 2px; line-height: 1;
+  }
+
+  .beat-num { font-size: 0.6rem; color: var(--accent); letter-spacing: 3px; }
+
+  .beat-meta {
+    font-size: 0.6rem; color: var(--muted);
+    letter-spacing: 2px; margin-bottom: 26px;
+    text-transform: uppercase;
+  }
+
+  /* PLAYER */
+  .player { display: flex; align-items: center; gap: 14px; }
+
+  .play-btn {
+    width: 50px; height: 50px;
+    background: var(--btn-bg);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: opacity .15s, transform .1s;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  }
+
+  .play-btn:hover { opacity: .85; }
+  .play-btn:active { transform: scale(0.96); }
+  .play-btn svg { width: 17px; height: 17px; fill: var(--btn-fg); }
+
+  .waveform-wrap {
+    flex: 1; position: relative;
+    height: 50px; cursor: pointer;
+  }
+
+  canvas#waveform { width: 100%; height: 100%; display: block; }
+
+  .waveform-wrap::after {
+    content: ''; position: absolute;
+    top: 0; left: 0;
+    width: var(--progress, 0%); height: 100%;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    pointer-events: none;
+  }
+
+  .time {
+    font-size: 0.6rem; color: var(--muted);
+    letter-spacing: 1px; min-width: 72px;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+
+  /* HINT */
+  .hint {
+    margin-top: 20px; padding: 13px 16px;
+    border: 1px dashed var(--hint-b);
+    font-size: 0.57rem; color: var(--hint-t);
+    letter-spacing: 1.5px; line-height: 2;
+  }
+
+  .hint span { color: var(--hint-s); }
+
+  /* FOOTER */
+  footer {
+    display: flex; justify-content: space-between;
+    align-items: center; padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .copy { font-size: 0.57rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  .links { display: flex; gap: 18px; }
+
+  .links a {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.57rem; color: var(--muted);
+    letter-spacing: 2px; text-decoration: none;
+    text-transform: uppercase;
+    transition: color .15s;
+  }
+
+  .links a:hover { color: var(--accent); }
+
+  .links a svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+
+  /* ANIMS */
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  header  { animation: fadeUp .45s ease both; }
+  .center { animation: fadeUp .45s .12s ease both; }
+  footer  { animation: fadeUp .45s .24s ease both; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="logo">EURO<em>CHECK</em>POINT</div>
+    <div class="status"><span class="dot"></span>Available for collabs</div>
+  </header>
+
+  <div class="center">
+    <div class="beat-card">
+
+      <div class="beat-header">
+        <h1 class="beat-title">KODAK BLACK X GUCCI MANE</h1>
+        <span class="beat-num">01</span>
+      </div>
+      <p class="beat-meta">Trap &nbsp;·&nbsp; Eurocheckpoint &nbsp;·&nbsp; 2025</p>
+
+      <div class="player">
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">
+          <svg id="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="waveform-wrap" id="wwrap" onclick="seek(event)">
+          <canvas id="waveform"></canvas>
+        </div>
+        <div class="time" id="time">0:00</div>
+      </div>
+
+      
+
+    </div>
+  </div>
+
+  <footer>
+    <span class="copy">© 2025 Eurocheckpoint</span>
+    <div class="links">
+
+      <!-- Discord — pon tu link en href -->
+      <a href="https://discord.gg/TULINK" target="_blank" title="Discord">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+        </svg>
+        Discord
+      </a>
+
+      <!-- Instagram — pon tu usuario en href -->
+      <a href="https://instagram.com/TUUSUARIO" target="_blank" title="Instagram">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+        </svg>
+        Instagram
+      </a>
+
+    </div>
+  </footer>
+
+</div>
+
+<!-- ▼ CAMBIA src="" POR LA RUTA DE TU ARCHIVO ▼ -->
+<audio id="audio" src="prodbyme.wav" preload="metadata"></audio>
+
+<script>
+  const audio  = document.getElementById('audio');
+  const icon   = document.getElementById('icon').querySelector('path');
+  const wwrap  = document.getElementById('wwrap');
+  const timeEl = document.getElementById('time');
+  const canvas = document.getElementById('waveform');
+  const ctx    = canvas.getContext('2d');
+
+  const PLAY  = 'M8 5v14l11-7z';
+  const PAUSE = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
+
+  const HEIGHTS = [
+    0.4,0.7,0.5,0.9,0.6,0.8,0.3,1.0,0.5,0.7,0.4,0.6,0.8,0.5,0.9,0.6,0.4,0.7,0.5,0.8,
+    0.3,0.6,0.9,0.5,0.7,0.4,0.8,0.6,0.5,0.9,0.4,0.7,0.6,0.8,0.5,0.3,0.7,0.9,0.6,0.5,
+    0.8,0.4,0.7,0.5,0.9,0.6,0.3,0.8,0.5,0.7,0.6,0.9,0.4,0.5,0.8,0.7,0.6,0.4,0.9,0.5,
+    0.7,0.6,0.8,0.3,0.5,0.9,0.6,0.7,0.4,0.8,0.5,0.6,0.9,0.7,0.4,0.5,0.8,0.6,0.3,0.7
+  ];
+
+  // Grab CSS vars for canvas bars
+  function getCSSVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function drawWave() {
+    canvas.width  = canvas.offsetWidth  * devicePixelRatio;
+    canvas.height = canvas.offsetHeight * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    const W = canvas.offsetWidth, H = canvas.offsetHeight;
+    const bars = HEIGHTS.length;
+    const barW = (W / bars) * 0.5;
+    const step = W / bars;
+    const progress = audio.duration ? audio.currentTime / audio.duration : 0;
+    const colorOn  = getCSSVar('--bar-on');
+    const colorOff = getCSSVar('--bar-off');
+
+    for (let i = 0; i < bars; i++) {
+      const h = Math.max(2, HEIGHTS[i] * H * 0.82);
+      const x = i * step;
+      const y = (H - h) / 2;
+      ctx.fillStyle = (i / bars) < progress ? colorOn : colorOff;
+      ctx.fillRect(x, y, barW, h);
+    }
+  }
+
+  drawWave();
+  window.addEventListener('resize', drawWave);
+
+  // Watch for dark/light mode changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawWave);
+
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    return m + ':' + Math.floor(s % 60).toString().padStart(2, '0');
+  }
+
+  function togglePlay() {
+    if (audio.paused) {
+      audio.play().catch(() => {
+        timeEl.textContent = 'no file';
+        setTimeout(() => timeEl.textContent = '0:00', 1800);
+      });
+    } else {
+      audio.pause();
+    }
+  }
+
+  audio.addEventListener('play',  () => icon.setAttribute('d', PAUSE));
+  audio.addEventListener('pause', () => icon.setAttribute('d', PLAY));
+  audio.addEventListener('ended', () => {
+    icon.setAttribute('d', PLAY);
+    wwrap.style.setProperty('--progress', '0%');
+    drawWave();
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    const pct = audio.duration ? audio.currentTime / audio.duration : 0;
+    timeEl.textContent = fmt(audio.currentTime) + ' / ' + (audio.duration ? fmt(audio.duration) : '0:00');
+    wwrap.style.setProperty('--progress', (pct * 100) + '%');
+    drawWave();
+  });
+
+  function seek(e) {
+    if (!audio.duration) return;
+    const r = wwrap.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+  }
+</script>
+</body>
+</html>
